@@ -36,7 +36,7 @@ class ColumnsGame:
         clock = pygame.time.Clock()
         action = 0
         while self._running:
-            clock.tick(100)
+            clock.tick(50)
             self._handle_events()
             if action%10==0:
                 user_interface.draw_board(self._state)
@@ -58,7 +58,7 @@ class ColumnsGame:
         pygame.font.init()
         text = pygame.font.SysFont('Century', 63, False, True)
         text_surface = text.render('GAME OVER', True, (255, 102, 102))
-        self._surface.blit(text_surface, (225, 210))
+        self._surface.blit(text_surface, (215, 210))
         pygame.display.flip()
         waiting = True
         clock = pygame.time.Clock()
@@ -129,12 +129,11 @@ class ColumnsGame:
         else:
             pygame.draw.rect(self._surface, _BACKGROUND_COLOR, jewel_rect, 1)
 
-
     def _add_faller(self) -> None:
         if self._state.get_faller() == None:
                 faller_colors = self._random_colors()
                 faller_column = self._random_column()
-                while self._state.get_board_cell(3, faller_column).get_status() != game_logic.Cell.empty_cell:
+                while self._state.get_board_cell(2, faller_column).get_status() != game_logic.Cell.empty_cell:
                     faller_column = self._random_column()
                 self._state.add_faller_to_board(faller_column, faller_colors[0],
                                                 faller_colors[1], faller_colors[2])
@@ -152,8 +151,6 @@ class ColumnsGame:
                 self._state.move_left()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
                 self._state.move_right()
-            # else:
-            #     return
 
     def _random_colors(self) -> list:
         faller_colors = []
