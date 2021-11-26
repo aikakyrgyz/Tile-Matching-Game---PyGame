@@ -8,9 +8,10 @@ import random
 _INITIAL_WIDTH = 700
 _INITIAL_HEIGHT = 700
 _BACKGROUND_COLOR = pygame.Color(255, 255, 255)
+_GRID = pygame.Color(184,184,184)
 _BOARD_COLOR = pygame.Color(0, 0, 0)
-_JEWEL_WIDTH = 0.05
-_JEWEL_HEIGHT = 0.05
+_JEWEL_WIDTH = 0.07
+_JEWEL_HEIGHT = 0.07
 _ROWS_NUM = 13
 _COLUMN_NUM = 6
 _FALLER = 3
@@ -27,7 +28,7 @@ class ColumnsGame:
         self._running = True
         self._state = game_logic.GameBoard(_ROWS_NUM, _COLUMN_NUM)
         self._state.set_board(True, [])
-
+        self._background_image = pygame.image.load('flowers.jpeg')
 
     def run(self) -> None:
         pygame.init()
@@ -35,17 +36,17 @@ class ColumnsGame:
         clock = pygame.time.Clock()
         action = 0
         while self._running:
-            clock.tick(30)
+            clock.tick(100)
             self._handle_events()
             if action%10==0:
                 user_interface.draw_board(self._state)
                 self._state.action()
                 if self._state.get_game_over():
+                    self._draw_end_game()
                     self._end_game()
                 self._add_faller()
                 action = 0
             self._redraw()
-
             action+=1
 
         pygame.quit()
@@ -53,20 +54,40 @@ class ColumnsGame:
     def _end_game(self) -> None:
         self._running = False
 
+    def _draw_end_game(self) -> None:
+        pygame.font.init()
+        text = pygame.font.SysFont('Century', 63, False, True)
+        text_surface = text.render('GAME OVER', True, (255, 102, 102))
+        self._surface.blit(text_surface, (225, 210))
+        pygame.display.flip()
+        waiting = True
+        clock = pygame.time.Clock()
+        while waiting:
+            clock.tick(30)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                if event.type == pygame.VIDEORESIZE:
+                    self._create_surface(event.size)
 
     def _create_surface(self, dimensions: tuple[int, int]) -> None:
         self._surface = pygame.display.set_mode(dimensions, pygame.RESIZABLE)
         self._jewel_image_scaled = None
 
     def _redraw(self) -> None:
-        self._surface.fill(_BACKGROUND_COLOR)
+        self._draw_background()
         self._draw_board_box()
         self._draw_jewels()
         pygame.display.flip()
 
+    def _draw_background(self) -> None:
+        background_rect = pygame.Rect(0, 0, self._surface.get_width(), self._surface.get_height())
+        scaled_image = pygame.transform.scale(self._background_image, (self._surface.get_width(), self._surface.get_height()))
+        self._surface.blit(scaled_image, background_rect)
+
     def _draw_board_box(self):
-        self._distance_from_top = (1.0 - (_JEWEL_HEIGHT * 13))/2
-        self._distance_from_side = (1.0 - (_JEWEL_WIDTH * 6))/2
+        self._distance_from_top = (1.0 - (_JEWEL_HEIGHT * 13))/2 - 0.002
+        self._distance_from_side = (1.0 - (_JEWEL_WIDTH * 6))/2 - 0.002
 
         top_left_frac_x = self._distance_from_side
         top_left_frac_y = self._distance_from_top
@@ -74,12 +95,11 @@ class ColumnsGame:
         top_left_pixel_x = int(top_left_frac_x * self._surface.get_width())
         top_left_pixel_y = int(top_left_frac_y * self._surface.get_height())
 
-        width_pixel = _JEWEL_WIDTH * _COLUMN_NUM * self._surface.get_width()
-        height_pixel = _JEWEL_HEIGHT * _ROWS_NUM * self._surface.get_height()
+        width_pixel = ((_JEWEL_WIDTH) * _COLUMN_NUM) * self._surface.get_width()
+        height_pixel = ((_JEWEL_HEIGHT) * _ROWS_NUM) * self._surface.get_height()
 
-        board_box = pygame.Rect(top_left_pixel_x, top_left_pixel_y, width_pixel, height_pixel)
-
-        pygame.draw.rect(self._surface, _BOARD_COLOR, board_box, 0)
+        self._board_box = pygame.Rect(top_left_pixel_x, top_left_pixel_y, width_pixel + 3, height_pixel + 3)
+        pygame.draw.rect(self._surface, _GRID, self._board_box, 2)
 
     def _draw_jewels(self) -> None:
         for row in range(2, self._state.get_rows()):
@@ -87,30 +107,34 @@ class ColumnsGame:
                 cell = self._state.get_board_cell(row, col)
                 status = cell.get_status()
                 letter = cell.get_value()
-                if status == game_logic.Cell.empty_cell:
-                    continue
-                top_left_frac_x = (col * _JEWEL_WIDTH) + self._distance_from_side
-                top_left_frac_y = ((row-2) * _JEWEL_HEIGHT) + self._distance_from_top
+                top_left_frac_x = (col * _JEWEL_WIDTH) + self._distance_from_side + 0.002
+                top_left_frac_y = ((row-2) * _JEWEL_HEIGHT) + self._distance_from_top + 0.003
                 top_left_pixel_x = int(top_left_frac_x * self._surface.get_width())
                 top_left_pixel_y = int(top_left_frac_y * self._surface.get_height())
                 if status == game_logic.Cell.match:
                     color = _COLORS['MATCH']
+                elif status == game_logic.Cell.empty_cell:
+                    color = _BACKGROUND_COLOR
                 else:
                     color = _COLORS[letter]
-                self._draw_jewel(top_left_pixel_x, top_left_pixel_y, color)
+                self._draw_jewel(status, top_left_pixel_x, top_left_pixel_y, color)
 
-    def _draw_jewel(self, top_left_pixel_x, top_left_pixel_y, color) -> None:
+    def _draw_jewel(self, status, top_left_pixel_x, top_left_pixel_y, color) -> None:
         width = _JEWEL_WIDTH * self._surface.get_width()
         height = _JEWEL_HEIGHT * self._surface.get_height()
         jewel_rect = pygame.Rect(top_left_pixel_x, top_left_pixel_y, width, height)
         pygame.draw.rect(self._surface, color, jewel_rect)
+        if status == game_logic.Cell.empty_cell:
+            pygame.draw.rect(self._surface, _GRID, jewel_rect, 1 )
+        else:
+            pygame.draw.rect(self._surface, _BACKGROUND_COLOR, jewel_rect, 1)
 
 
     def _add_faller(self) -> None:
         if self._state.get_faller() == None:
                 faller_colors = self._random_colors()
                 faller_column = self._random_column()
-                while self._state.get_board_cell(0, faller_column).get_status() != game_logic.Cell.empty_cell:
+                while self._state.get_board_cell(3, faller_column).get_status() != game_logic.Cell.empty_cell:
                     faller_column = self._random_column()
                 self._state.add_faller_to_board(faller_column, faller_colors[0],
                                                 faller_colors[1], faller_colors[2])
@@ -119,16 +143,17 @@ class ColumnsGame:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self._running = False
-            elif event.type == pygame.VIDEORESIZE:
+            if event.type == pygame.VIDEORESIZE:
+                print('RESIZE')
                 self._create_surface(event.size)
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 self._state.rotate_faller()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
                 self._state.move_left()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
                 self._state.move_right()
-            else:
-                return
+            # else:
+            #     return
 
     def _random_colors(self) -> list:
         faller_colors = []
