@@ -9,7 +9,7 @@ _INITIAL_WIDTH = 700
 _INITIAL_HEIGHT = 700
 _BACKGROUND_COLOR = pygame.Color(255, 255, 255)
 _LANDED_COLOR = pygame.Color(173, 235, 235)
-_GRID = pygame.Color(184,184,184)
+_GRID = pygame.Color(102, 179, 255)
 _BOARD_COLOR = pygame.Color(0, 0, 0)
 _JEWEL_WIDTH = 0.07
 _JEWEL_HEIGHT = 0.07
@@ -42,11 +42,12 @@ class ColumnsGame:
         clock = pygame.time.Clock()
         action = 0
         while self._running:
-            clock.tick(40)
+            clock.tick(33)
             self._handle_events()
             if action%10==0:
-                user_interface.draw_board(self._state)
+                # user_interface.draw_board(self._state)
                 self._state.action()
+                self._score = (self._state.get_score() - 3)/2
                 if self._state.get_game_over():
                     self._draw_end_game()
                     self._end_game()
@@ -62,9 +63,9 @@ class ColumnsGame:
 
     def _draw_end_game(self) -> None:
         pygame.font.init()
-        text = pygame.font.SysFont('Century', 63, False, True)
-        text_surface = text.render('GAME OVER', True, (255, 102, 102))
-        self._surface.blit(text_surface, (215, 210))
+        text = pygame.font.SysFont('Century', 65, False, False)
+        text_surface = text.render('GAME OVER', True, (255, 51, 51))
+        self._surface.blit(text_surface, (210, 210))
         pygame.display.flip()
         waiting = True
         clock = pygame.time.Clock()
@@ -90,6 +91,24 @@ class ColumnsGame:
         background_rect = pygame.Rect(0, 0, self._surface.get_width(), self._surface.get_height())
         scaled_image = pygame.transform.scale(self._background_image, (self._surface.get_width(), self._surface.get_height()))
         self._surface.blit(scaled_image, background_rect)
+        self._draw_score_box()
+
+    def _draw_score_box(self) -> None:
+        top_left_frac_x = 0.05
+        top_left_frac_y = 0.4
+        top_left_pixel_x = int(top_left_frac_x * self._surface.get_width())
+        top_left_pixel_y = int(top_left_frac_y * self._surface.get_height())
+        width_pixel = 0.20 * self._surface.get_width()
+        height_pixel = 0.10 * self._surface.get_height()
+        self._score_box = pygame.Rect(top_left_pixel_x, top_left_pixel_y, width_pixel, height_pixel)
+        pygame.draw.rect(self._surface, pygame.Color(193, 238, 247), self._score_box, 0, 5)
+        pygame.font.init()
+        text = pygame.font.SysFont('Century', 40, False, False)
+        text_surface = text.render('Score:', True, (0, 0, 0))
+        self._surface.blit(text_surface, (top_left_pixel_x + 10, top_left_pixel_y + 10))
+        text = pygame.font.SysFont('Century', 40, False, False)
+        text_surface = text.render(f'{self._score}', True, (0, 204, 0))
+        self._surface.blit(text_surface, (width_pixel/2 + 10, top_left_pixel_y + 40))
 
     def _draw_board_box(self):
         self._distance_from_top = (1.0 - (_JEWEL_HEIGHT * 13))/2 - 0.002
@@ -137,7 +156,7 @@ class ColumnsGame:
         else:
             pygame.draw.rect(self._surface, color, jewel_rect)
         if status == game_logic.Cell.empty_cell:
-            pygame.draw.rect(self._surface, _GRID, jewel_rect, 1 )
+            pygame.draw.rect(self._surface, _GRID, jewel_rect, 1)
         else:
             pygame.draw.rect(self._surface, _BACKGROUND_COLOR, jewel_rect, 1)
 
@@ -155,7 +174,6 @@ class ColumnsGame:
             if event.type == pygame.QUIT:
                 self._running = False
             if event.type == pygame.VIDEORESIZE:
-                print('RESIZE')
                 self._create_surface(event.size)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 self._state.rotate_faller()

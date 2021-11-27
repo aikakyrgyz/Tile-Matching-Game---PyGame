@@ -109,6 +109,7 @@ class GameBoard:
         self._faller = None
         self._game_over = False
         self._matching_cells_present = False
+        self._match_score = 3
 
     def get_rows(self) -> int:
         return self._rows
@@ -126,8 +127,12 @@ class GameBoard:
     def get_faller(self) -> Faller:
         return self._faller
 
+    def get_score(self) -> int:
+        return self._match_score
+
     def get_game_over(self) -> bool:
         return self._game_over
+
 
     def set_board(self, empty: bool, contents_list: list) -> None:
         '''
@@ -183,7 +188,6 @@ class GameBoard:
             for row in range(self._rows - 1, 0, -1):
                 for col in range(self._columns):
                     if self.get_board_cell(row, col).get_status() == Cell.empty_cell:
-                        # empty_cell = self._board[row][col]
                         non_empty_cell_above = self._board[row - 1][col]
                         if non_empty_cell_above.get_status() == Cell.falling_cell or non_empty_cell_above.get_status() == Cell.landed_cell:
                             continue
@@ -250,7 +254,6 @@ class GameBoard:
         '''
 
         self._faller = Faller(column, top, middle, bottom)
-        print(self._faller.get_faller())
         column_faller = self._faller.get_column()
         middle_piece = self._faller.get_middle_piece()
         top_piece = self._faller.get_top_piece()
@@ -493,6 +496,7 @@ class GameBoard:
                     match_jewels.append(next_jewel)
                     if len(match_jewels) >= 3:
                         for jewel in match_jewels:
+                            self._match_score += 1
                             jewel_row = jewel.get_row()
                             jewel_col = jewel.get_column()
                             self._board[jewel_row][jewel_col].set_status(Cell.match)
@@ -503,6 +507,7 @@ class GameBoard:
                     if col == self._columns - 1:
                         if len(match_jewels) >= 3:
                             for jewel in match_jewels:
+                                self._match_score += 1
                                 jewel_row = jewel.get_row()
                                 jewel_col = jewel.get_column()
                                 self._board[jewel_row][jewel_col].set_status(Cell.match)
@@ -531,12 +536,10 @@ class GameBoard:
                                 self._board[jewel_row][jewel_col].set_status(Cell.match)
                             # self._matching_cells_present = True
                             match_jewels = [empty]
-
-
-
                 else:
                     if len(match_jewels) >= 3:
                         for jewel in match_jewels:
+                            self._match_score += 1
                             jewel_row = jewel.get_row()
                             jewel_col = jewel.get_column()
                             self._board[jewel_row][jewel_col].set_status(Cell.match)
@@ -545,7 +548,6 @@ class GameBoard:
 
                     match_jewels = []
                     match_jewels.append(next_jewel)
-
     def get_matching_cells_present(self):
         return self._matching_cells_present
 
