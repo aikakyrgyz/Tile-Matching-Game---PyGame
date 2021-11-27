@@ -8,6 +8,7 @@ import random
 _INITIAL_WIDTH = 700
 _INITIAL_HEIGHT = 700
 _BACKGROUND_COLOR = pygame.Color(255, 255, 255)
+_LANDED_COLOR = pygame.Color(173, 235, 235)
 _GRID = pygame.Color(184,184,184)
 _BOARD_COLOR = pygame.Color(0, 0, 0)
 _JEWEL_WIDTH = 0.07
@@ -16,11 +17,16 @@ _ROWS_NUM = 13
 _COLUMN_NUM = 6
 _FALLER = 3
 LETTER_COLORS = ['S', 'T', 'V', 'W', 'X', 'Y', 'Z']
-_COLORS = {'S': pygame.Color(204, 255, 255), 'T': pygame.Color(255, 204, 255),
-           'V': pygame.Color(153, 153, 255), 'W': pygame.Color(0, 204, 153),
-           'X': pygame.Color(255, 218, 179), 'Y': pygame.Color(179, 204, 255),
-           'Z': pygame.Color(191, 255, 128), 'MATCH': pygame.Color(255, 255, 0),
+_COLORS = {'S': [pygame.Color(204, 255, 255), pygame.image.load('1.jpg')],
+           'T': [pygame.Color(255, 204, 255), pygame.image.load('2.jpg')],
+           'V': [pygame.Color(153, 153, 255), pygame.image.load('3.jpg')],
+           'W': [pygame.Color(0, 204, 153),   pygame.image.load('4.jpg')],
+           'X': [pygame.Color(255, 218, 179), pygame.image.load('5.jpg')],
+           'Y': [pygame.Color(179, 204, 255), pygame.image.load('6.jpg')],
+           'Z': [pygame.Color(191, 255, 128), pygame.image.load('7.png')],
+           'MATCH': [pygame.Color(255, 255, 0), pygame.image.load('match.jpeg')],
            ' ': _BACKGROUND_COLOR}
+
 
 
 class ColumnsGame:
@@ -28,7 +34,7 @@ class ColumnsGame:
         self._running = True
         self._state = game_logic.GameBoard(_ROWS_NUM, _COLUMN_NUM)
         self._state.set_board(True, [])
-        self._background_image = pygame.image.load('flowers.jpeg')
+        self._background_image = pygame.image.load('background.jpeg')
 
     def run(self) -> None:
         pygame.init()
@@ -36,7 +42,7 @@ class ColumnsGame:
         clock = pygame.time.Clock()
         action = 0
         while self._running:
-            clock.tick(50)
+            clock.tick(40)
             self._handle_events()
             if action%10==0:
                 user_interface.draw_board(self._state)
@@ -112,18 +118,24 @@ class ColumnsGame:
                 top_left_pixel_x = int(top_left_frac_x * self._surface.get_width())
                 top_left_pixel_y = int(top_left_frac_y * self._surface.get_height())
                 if status == game_logic.Cell.match:
-                    color = _COLORS['MATCH']
+                    color = _COLORS['MATCH'][1]
                 elif status == game_logic.Cell.empty_cell:
                     color = _BACKGROUND_COLOR
+                elif status == game_logic.Cell.landed_cell:
+                    color = _LANDED_COLOR
                 else:
-                    color = _COLORS[letter]
+                    color = _COLORS[letter][1] #change index to 0, if want to use colors instead of images
+
                 self._draw_jewel(status, top_left_pixel_x, top_left_pixel_y, color)
 
     def _draw_jewel(self, status, top_left_pixel_x, top_left_pixel_y, color) -> None:
         width = _JEWEL_WIDTH * self._surface.get_width()
         height = _JEWEL_HEIGHT * self._surface.get_height()
         jewel_rect = pygame.Rect(top_left_pixel_x, top_left_pixel_y, width, height)
-        pygame.draw.rect(self._surface, color, jewel_rect)
+        if status != game_logic.Cell.empty_cell and status != game_logic.Cell.landed_cell:
+            self._assign_image(jewel_rect, width, height, color) #color is the image
+        else:
+            pygame.draw.rect(self._surface, color, jewel_rect)
         if status == game_logic.Cell.empty_cell:
             pygame.draw.rect(self._surface, _GRID, jewel_rect, 1 )
         else:
@@ -152,6 +164,10 @@ class ColumnsGame:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
                 self._state.move_right()
 
+    def _assign_image(self, jewel_rect, width, height, color) -> None:
+        scaled_image = pygame.transform.scale(color, (width, height))
+        self._surface.blit(scaled_image, jewel_rect)
+
     def _random_colors(self) -> list:
         faller_colors = []
         for jewel in range(_FALLER):
@@ -160,6 +176,7 @@ class ColumnsGame:
 
     def _random_column(self) -> int:
         return random.randint(0, _COLUMN_NUM-1)
+
 
 
 if __name__ == '__main__':
