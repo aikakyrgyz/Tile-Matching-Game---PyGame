@@ -41,7 +41,7 @@ class ColumnsGame:
         clock = pygame.time.Clock()
         action = 0
         while self._running:
-            clock.tick(100)
+            clock.tick(400)
             self._handle_events()
             if action % 30 == 0:
                 self._state.action()
@@ -56,6 +56,8 @@ class ColumnsGame:
                 self._add_faller()
                 action = 0
             self._redraw()
+            pygame.display.flip()
+
             action += 1
 
         pygame.quit()
@@ -82,15 +84,19 @@ class ColumnsGame:
         Displays Game Over text
         Stays still until the close button is clicked
         """
-        pygame.font.init()
-        text = pygame.font.SysFont('Century', 65, False, False)
-        text_surface = text.render('GAME OVER', True, (255, 51, 51))
-        self._surface.blit(text_surface, (210, 210))
-        pygame.display.flip()
         waiting = True
         clock = pygame.time.Clock()
         while waiting:
             clock.tick(30)
+            pygame.font.init()
+            self._redraw()
+            text = pygame.font.SysFont('Century', int(65 * self._surface.get_height() / 700), False, False)
+            text_surface = text.render('GAME OVER', True, (255, 51, 51))
+            # self._surface.blit(text_surface, (210, 210))
+            pixel_x = self._surface.get_width() * 0.3
+            pixel_y = self._surface.get_height() * 0.3
+            self._surface.blit(text_surface, (pixel_x, pixel_y))
+            pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
@@ -112,7 +118,6 @@ class ColumnsGame:
         self._draw_background()
         self._draw_board_box()
         self._draw_jewels()
-        pygame.display.flip()
 
     def _draw_background(self) -> None:
         """
@@ -136,16 +141,23 @@ class ColumnsGame:
         self._score_box = pygame.Rect(top_left_pixel_x, top_left_pixel_y, width_pixel, height_pixel)
         pygame.draw.rect(self._surface, pygame.Color(193, 238, 247), self._score_box, 0, 5)
         pygame.font.init()
-        text = pygame.font.SysFont('Century', 40, False, False)
+        text = pygame.font.SysFont('Century', int(40 * self._surface.get_height()/_INITIAL_HEIGHT), False, False)
         text_surface = text.render('Score:', True, (0, 0, 0))
+        current_w, current_h = self._surface.get_size()
+        text_w, text_h = text_surface.get_size()
+        text_surface = pygame.transform.smoothscale(
+            text_surface, (text_w * current_w // 700, text_h * current_h // _INITIAL_HEIGHT))
         self._surface.blit(text_surface, (top_left_pixel_x + 10, top_left_pixel_y + 10))
-        text = pygame.font.SysFont('Century', 40, False, False)
+        text = pygame.font.SysFont('Century', int(40 * self._surface.get_height()/700), False, False)
         text_surface = text.render(f'{self._score}', True, (0, 204, 0))
-        self._surface.blit(text_surface, (width_pixel/2 + 10, top_left_pixel_y + 40))
+        text_w, text_h = text_surface.get_size()
+        text_surface = pygame.transform.smoothscale(
+            text_surface, (text_w * current_w // _INITIAL_HEIGHT, text_h * current_h // _INITIAL_HEIGHT))
+        self._surface.blit(text_surface, (top_left_pixel_x + self._surface.get_width() * 0.020, top_left_pixel_y + self._surface.get_height() * 0.06))
 
     def _draw_board_box(self):
         """
-        Draws the game board
+        Draws the game board (inner box)
         """
         self._distance_from_top = (1.0 - (_JEWEL_HEIGHT * 13))/2 - 0.002
         self._distance_from_side = (1.0 - (_JEWEL_WIDTH * 6))/2 - 0.002
@@ -258,7 +270,7 @@ class ColumnsGame:
         """
         Assigns an image to each jewel depending on the letter-color
         """
-        scaled_image = pygame.transform.scale(color, (width, height))
+        scaled_image = pygame.transform.scale(color, (int(width), int(height)))
         self._surface.blit(scaled_image, jewel_rect)
 
     def _random_colors(self) -> list:
