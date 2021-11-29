@@ -196,7 +196,6 @@ class GameBoard:
                         self._board[row - 1][col].set_value(SPACE)
                         self._board[row - 1][col].set_status(Cell.empty_cell)
 
-
     def _check_above_rows_unmatched(self) -> bool:
         '''
         Checks if the frozen faller fit in the board
@@ -248,6 +247,9 @@ class GameBoard:
                 self._find_match()
             elif self._faller.get_status() == Faller.falling_status:
                 self._keep_falling()
+        self._matching_cells_present = False
+
+
     def add_faller_to_board(self, column, top, middle, bottom) -> None:
         '''
         Adds the faller to the board with the specified color in contents
@@ -511,7 +513,7 @@ class GameBoard:
                                 jewel_row = jewel.get_row()
                                 jewel_col = jewel.get_column()
                                 self._board[jewel_row][jewel_col].set_status(Cell.match)
-                            # self._matching_cells_present = True
+                            self._matching_cells_present = True
                         # else:
                         #     self._matching_cells_present = False
                     match_jewels = []
@@ -589,7 +591,7 @@ class GameBoard:
         for row in range(self._rows):
             for col in range(self._columns):
                 if self._board[row][col].get_status() == Cell.match:
-                    # self._matching_cells_present = True
+                    self._matching_cells_present = True
                     self._board[row][col].set_value(SPACE)
                     self._board[row][col].set_status(Cell.empty_cell)
         self.fill_blanks()

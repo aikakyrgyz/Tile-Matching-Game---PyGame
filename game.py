@@ -27,41 +27,61 @@ _COLORS = {'S': [pygame.Color(204, 255, 255), pygame.image.load('1.jpg')],
            'MATCH': [pygame.Color(255, 255, 0), pygame.image.load('match.jpeg')],
            ' ': _BACKGROUND_COLOR}
 
-
-
 class ColumnsGame:
     def __init__(self):
+        self._background_image = pygame.image.load('background.jpeg')
         self._running = True
         self._state = game_logic.GameBoard(_ROWS_NUM, _COLUMN_NUM)
         self._state.set_board(True, [])
-        self._background_image = pygame.image.load('background.jpeg')
 
     def run(self) -> None:
         pygame.init()
         self._create_surface((_INITIAL_WIDTH, _INITIAL_HEIGHT))
+        self._initialize_sounds()
         clock = pygame.time.Clock()
         action = 0
         while self._running:
-            clock.tick(33)
+            clock.tick(100)
             self._handle_events()
-            if action%10==0:
-                # user_interface.draw_board(self._state)
+            if action % 30 == 0:
                 self._state.action()
-                self._score = (self._state.get_score() - 3)/2
+                self._set_score()
+                if self._state.get_faller():
+                    if self._state.get_faller().get_status() == game_logic.Faller.landed_status:
+                        self._play_sound('fall')
                 if self._state.get_game_over():
-                    self._draw_end_game()
                     self._end_game()
+                    self._play_sound('game over')
+                    self._draw_end_game()
                 self._add_faller()
                 action = 0
             self._redraw()
-            action+=1
+            action += 1
 
         pygame.quit()
+
+    def _initialize_sounds(self):
+        """
+        Initialized all the sounds needed for the game
+        """
+        self._sound_left_right = pygame.mixer.Sound('move.mp3')
+        self._sound_fall = pygame.mixer.Sound('fall.mp3')
+        self._sound_game_over = pygame.mixer.Sound('game_over.wav')
+
+    def _set_score(self):
+        """
+        Sets the score to the current score
+        """
+        self._score = (self._state.get_score() - 3) / 2
 
     def _end_game(self) -> None:
         self._running = False
 
     def _draw_end_game(self) -> None:
+        """
+        Displays Game Over text
+        Stays still until the close button is clicked
+        """
         pygame.font.init()
         text = pygame.font.SysFont('Century', 65, False, False)
         text_surface = text.render('GAME OVER', True, (255, 51, 51))
@@ -73,27 +93,40 @@ class ColumnsGame:
             clock.tick(30)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
+                    return
                 if event.type == pygame.VIDEORESIZE:
                     self._create_surface(event.size)
 
     def _create_surface(self, dimensions: tuple[int, int]) -> None:
+        """
+        Creates a surface
+        :param dimensions: dimensions of the display
+        :return: None
+        """
         self._surface = pygame.display.set_mode(dimensions, pygame.RESIZABLE)
-        self._jewel_image_scaled = None
 
     def _redraw(self) -> None:
+        """
+        Redraws all of the contents of the display
+        """
         self._draw_background()
         self._draw_board_box()
         self._draw_jewels()
         pygame.display.flip()
 
     def _draw_background(self) -> None:
+        """
+        Draws the background image
+        """
         background_rect = pygame.Rect(0, 0, self._surface.get_width(), self._surface.get_height())
         scaled_image = pygame.transform.scale(self._background_image, (self._surface.get_width(), self._surface.get_height()))
         self._surface.blit(scaled_image, background_rect)
         self._draw_score_box()
 
     def _draw_score_box(self) -> None:
+        """
+        Draws the score box
+        """
         top_left_frac_x = 0.05
         top_left_frac_y = 0.4
         top_left_pixel_x = int(top_left_frac_x * self._surface.get_width())
@@ -111,6 +144,9 @@ class ColumnsGame:
         self._surface.blit(text_surface, (width_pixel/2 + 10, top_left_pixel_y + 40))
 
     def _draw_board_box(self):
+        """
+        Draws the game board
+        """
         self._distance_from_top = (1.0 - (_JEWEL_HEIGHT * 13))/2 - 0.002
         self._distance_from_side = (1.0 - (_JEWEL_WIDTH * 6))/2 - 0.002
 
@@ -127,6 +163,10 @@ class ColumnsGame:
         pygame.draw.rect(self._surface, _GRID, self._board_box, 2)
 
     def _draw_jewels(self) -> None:
+        """
+        Loops through each jewel, determines the linked color, dimensions, and coordinates
+        and class draw_jewel function
+        """
         for row in range(2, self._state.get_rows()):
             for col in range(self._state.get_columns()):
                 cell = self._state.get_board_cell(row, col)
@@ -148,6 +188,10 @@ class ColumnsGame:
                 self._draw_jewel(status, top_left_pixel_x, top_left_pixel_y, color)
 
     def _draw_jewel(self, status, top_left_pixel_x, top_left_pixel_y, color) -> None:
+        """
+        Draws each jewel, color is the image that should be blit on the jewel
+        Draws the grid, by drawing an outline of width 1 on every empty cell
+        """
         width = _JEWEL_WIDTH * self._surface.get_width()
         height = _JEWEL_HEIGHT * self._surface.get_height()
         jewel_rect = pygame.Rect(top_left_pixel_x, top_left_pixel_y, width, height)
@@ -161,15 +205,29 @@ class ColumnsGame:
             pygame.draw.rect(self._surface, _BACKGROUND_COLOR, jewel_rect, 1)
 
     def _add_faller(self) -> None:
+        """
+        Add a faller to the board if there is no faller present
+        Faller is strictly created on a column that is not all filled with frozen jewels unless there is no
+        """
         if self._state.get_faller() == None:
                 faller_colors = self._random_colors()
                 faller_column = self._random_column()
                 while self._state.get_board_cell(2, faller_column).get_status() != game_logic.Cell.empty_cell:
                     faller_column = self._random_column()
+                    rows = []
+                    for row in self._state.get_board()[0:3]:
+                        row.append(row)
+                    if ' ' not in rows:
+                        faller_column = self._random_column()
+                        break
                 self._state.add_faller_to_board(faller_column, faller_colors[0],
                                                 faller_colors[1], faller_colors[2])
 
     def _handle_events(self) -> None:
+        """
+        Handles each pygame event
+        Pressing space, right arrow and left arrow triggers a sound
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self._running = False
@@ -177,24 +235,46 @@ class ColumnsGame:
                 self._create_surface(event.size)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 self._state.rotate_faller()
+                self._play_sound('move')
             if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
                 self._state.move_left()
+                self._play_sound('move')
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
                 self._state.move_right()
+                self._play_sound('move')
+
+    def _play_sound(self, str):
+        """
+        Plays the sound depending on the action
+        """
+        if str == 'move':
+            self._sound_left_right.play()
+        elif str == 'fall':
+            self._sound_fall.play()
+        elif str == 'game over':
+            self._sound_game_over.play()
 
     def _assign_image(self, jewel_rect, width, height, color) -> None:
+        """
+        Assigns an image to each jewel depending on the letter-color
+        """
         scaled_image = pygame.transform.scale(color, (width, height))
         self._surface.blit(scaled_image, jewel_rect)
 
     def _random_colors(self) -> list:
+        """
+        Generates three random colors for each jewel of a faller
+        """
         faller_colors = []
         for jewel in range(_FALLER):
             faller_colors.append(random.choice(LETTER_COLORS))
         return faller_colors
 
     def _random_column(self) -> int:
+        """
+        Generates a random integer between 0 and 5 for a faller column
+        """
         return random.randint(0, _COLUMN_NUM-1)
-
 
 
 if __name__ == '__main__':
