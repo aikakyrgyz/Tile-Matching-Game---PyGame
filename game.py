@@ -41,9 +41,9 @@ class ColumnsGame:
         clock = pygame.time.Clock()
         action = 0
         while self._running:
-            clock.tick(400)
+            clock.tick(500)
             self._handle_events()
-            if action % 30 == 0:
+            if action % 15 == 0:
                 self._state.action()
                 self._set_score()
                 if self._state.get_faller():
@@ -224,14 +224,18 @@ class ColumnsGame:
         if self._state.get_faller() == None:
                 faller_colors = self._random_colors()
                 faller_column = self._random_column()
-                while self._state.get_board_cell(2, faller_column).get_status() != game_logic.Cell.empty_cell:
+                while self._state.get_board_cell(4, faller_column).get_status() != game_logic.Cell.empty_cell:
                     faller_column = self._random_column()
                     rows = []
-                    for row in self._state.get_board()[0:3]:
-                        row.append(row)
-                    if ' ' not in rows:
+                    for row in self._state.get_board()[4]:
+                        cell = row.get_status()
+                        rows.append(cell)
+                    # print(rows)
+                    if 'empty cell' not in rows:
                         faller_column = self._random_column()
                         break
+                # print(faller_column)
+
                 self._state.add_faller_to_board(faller_column, faller_colors[0],
                                                 faller_colors[1], faller_colors[2])
 

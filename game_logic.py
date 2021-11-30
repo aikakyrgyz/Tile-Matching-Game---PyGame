@@ -380,7 +380,7 @@ class GameBoard:
         jewel = copy_board[0][0].get_status()
         if jewel == Cell.empty_cell:
             equal = True
-            for each in copy_board[0]:
+            for each in copy_board[0][:-1]:
                 if jewel != each.get_status():
                     equal = False
                     break
@@ -389,7 +389,7 @@ class GameBoard:
         jewel = copy_board[1][0].get_status()
         if jewel == Cell.empty_cell:
             equal = True
-            for each in copy_board[1]:
+            for each in copy_board[1][:-1]:
                 if jewel != each.get_status():
                     equal = False
                     break
