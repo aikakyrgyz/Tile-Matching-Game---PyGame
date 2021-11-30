@@ -2,7 +2,6 @@
 #view
 import pygame
 import game_logic
-import user_interface
 import random
 
 _INITIAL_WIDTH = 700
@@ -41,9 +40,9 @@ class ColumnsGame:
         clock = pygame.time.Clock()
         action = 0
         while self._running:
-            clock.tick(500)
+            clock.tick(60)
             self._handle_events()
-            if action % 15 == 0:
+            if action % 30 == 0:
                 self._state.action()
                 self._set_score()
                 if self._state.get_faller():
@@ -235,7 +234,6 @@ class ColumnsGame:
                         faller_column = self._random_column()
                         break
                 # print(faller_column)
-
                 self._state.add_faller_to_board(faller_column, faller_colors[0],
                                                 faller_colors[1], faller_colors[2])
 
